@@ -1,6 +1,7 @@
 from __future__ import print_function
 from ortools.linear_solver import pywraplp
 from itertools import chain, combinations, product
+import matplotlib.pyplot as plt
 import numpy as np
 import sys
 from sys import stdout as out
@@ -94,19 +95,45 @@ def solve(coords, places, problem_name):
 
     # SOLVE-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
-    solver.SetTimeLimit(60000)
-    status = solver.Solve()
+    # solver.SetTimeLimit(30*60000)
+    solver.EnableOutput()
+    try:
+        status = solver.Solve()
+    except KeyboardInterrupt:
+        print('Trying to finish the solving process')
+        solver.InterruptSolve()
 
     # DISPLAY SOLUTION-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
     # if status == pywraplp.Solver.OPTIMAL:
-    print('Solution to \'' + problem_name + '\':')
+    # print('Solution to \'' + problem_name + '\':')
     print('Objective value =', solver.Objective().Value())
+    print('Nodes = ' + str(solver.nodes()))
+    # gap = solver.GetDoubleParam(solver.RELATIVE_MIP_GAP)
+    # print('Gap = ' + str(gap))
+
+    nc = 0
+    polygon = []
+    while True:
+        for i in V:
+            if x[nc][i].solution_value() >= 1:
+                nc = i
+                break
+            
+        print(' -> ' + str(coords[nc]))
+        polygon.append([coords[nc][0], coords[nc][1]])
+        if nc == 0:
+            break
+
+    polygon.append(polygon[0]) #repeat the first point to create a 'closed loop'
+
+    xs, ys = zip(*polygon) #create lists of x and y values
+
+    plt.figure()
+    plt.scatter(*zip(*polygon), linewidths=0.00001)
+    plt.plot(xs,ys) 
+    plt.show() # if you need...
     print('------------------------------------------------\n')
-        # print('x =', x.solution_value())
-        # print('y =', y.solution_value())
-    # else:
-        # print('The problem does not have an optimal solution.')
 
 
 
