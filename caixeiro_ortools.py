@@ -41,10 +41,11 @@ def solve(coords, places, problem_name):
     # x and y are integer non-negative variables.
     # x = solver.IntVar(0.0, infinity, 'x')
     # y = solver.IntVar(0.0, infinity, 'y')
-    x = [[solver.BoolVar('x') for j in V] for i in V]
+    x = [[solver.BoolVar('x' + str(i) + '_' + str(j)) for j in V] for i in V]
     y = [solver.IntVar(0.0, infinity, 'y') for i in V]
 
     print('Number of variables =', solver.NumVariables())
+    
 
     # variáveis binárias indicando se arco (i,j) é usado na rota
         # x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
@@ -92,41 +93,66 @@ def solve(coords, places, problem_name):
     solver.Minimize(sum(c[i][j]*x[i][j] for i in V for j in V))
 
     # minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
+    values = []
+    with open('wi29.adjmatrix', 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            values.append(float(line))
+
+    polygon = []
+    aux = np.array(values).reshape((len(V), len(V)))
+    for index, coord in enumerate(coords):
+
+        other_index = 0
+        for g, val in enumerate(aux[index]):
+            if(val == 1):
+                other_index = g
+                break
+
+        polygon.append((coord, coords[other_index]))
+
+    polygon.append(polygon[0]) #repeat the first point to create a 'closed loop'
+
+
+    # for x in range(0, len(V)):
+    #     values.append(0.0)
+
+    #solver.SetHint(solver.variables(), values)
+    #def SetHint(self, variables: std::vector< operations_research::MPVariable * > const &, values: std::vector< double > const &) -> 'void'
 
     # SOLVE-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
     # solver.SetTimeLimit(30*60000)
-    solver.EnableOutput()
-    try:
-        status = solver.Solve()
-    except KeyboardInterrupt:
-        print('Trying to finish the solving process')
-        solver.InterruptSolve()
+    #solver.EnableOutput()
+    #try:
+    #    status = solver.Solve()
+    #except KeyboardInterrupt:
+    #    print('Trying to finish the solving process')
+    #    solver.InterruptSolve()
 
     # DISPLAY SOLUTION-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
     # if status == pywraplp.Solver.OPTIMAL:
     # print('Solution to \'' + problem_name + '\':')
-    print('Objective value =', solver.Objective().Value())
-    print('Nodes = ' + str(solver.nodes()))
+    #print('Objective value =', solver.Objective().Value())
+    #print('Nodes = ' + str(solver.nodes()))
     # gap = solver.GetDoubleParam(solver.RELATIVE_MIP_GAP)
     # print('Gap = ' + str(gap))
 
-    nc = 0
-    polygon = []
-    while True:
-        for i in V:
-            if x[nc][i].solution_value() >= 1:
-                nc = i
-                break
+    # nc = 0
+    # polygon = []
+    # while True:
+    #     for i in V:
+    #         if x[nc][i].solution_value() >= 1:
+    #             nc = i
+    #             break
             
-        print(' -> ' + str(coords[nc]))
-        polygon.append([coords[nc][0], coords[nc][1]])
-        if nc == 0:
-            break
+    #     print(' -> ' + str(coords[nc]))
+    #     polygon.append([coords[nc][0], coords[nc][1]])
+    #     if nc == 0:
+    #         break
 
-    polygon.append(polygon[0]) #repeat the first point to create a 'closed loop'
-
+    #polygon.append(polygon[0]) #repeat the first point to create a 'closed loop'
     xs, ys = zip(*polygon) #create lists of x and y values
 
     plt.figure()
