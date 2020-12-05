@@ -7,6 +7,26 @@ import sys
 from sys import stdout as out
 import os
 
+def get_hint_from_file(file_path, num_of_ys):
+
+    vals = []
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
+
+    for val in lines:
+        try:
+            vals.append(float(val))
+        except:
+            continue
+
+    print(vals)
+
+    # for x in range(0, num_of_ys):
+        # vals.append(x)
+        
+    return vals
+
+
 def get_distance_matrix(coords):
     matrix = []
     
@@ -22,10 +42,6 @@ def get_distance_matrix(coords):
 
 
 def solve(coords, places, problem_name):
-    # toy problem places
-    # places = ['Gusty Garden Galaxy', 'Freezeflame Galaxy', 'Dusty Dune Galaxy', 'Honeyclimb Galaxy', 'Bigmouth Galaxy']
-    # toy problem coordenates
-    # coords = [(3, 2), (4, 4), (10, 6), (12, 4), (14, 8)]
 
     n, V = len(coords), set(range(len(coords)))
         
@@ -38,10 +54,7 @@ def solve(coords, places, problem_name):
     # SET VARIABLES-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
     infinity = solver.infinity()
-    # x and y are integer non-negative variables.
-    # x = solver.IntVar(0.0, infinity, 'x')
-    # y = solver.IntVar(0.0, infinity, 'y')
-    x = [[solver.BoolVar('x') for j in V] for i in V]
+    x = [[solver.BoolVar('x' + str(i) + str(j)) for j in V] for i in V]
     y = [solver.IntVar(0.0, infinity, 'y') for i in V]
 
     print('Number of variables =', solver.NumVariables())
@@ -57,11 +70,6 @@ def solve(coords, places, problem_name):
 
     # SET CONSTRAINS-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
-    # x + 7 * y <= 17.5.
-    # solver.Add(x + 7 * y <= 17.5)
-    # x <= 3.5.
-    # solver.Add(x <= 3.5)
-
     for i in V:
         solver.Add(sum(x[i][j] for j in V - {i}) == 1)
     for i in V:
@@ -95,8 +103,21 @@ def solve(coords, places, problem_name):
 
     # SOLVE-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
-    # solver.SetTimeLimit(30*60000)
+    solver.SetTimeLimit(30*60000)
     solver.EnableOutput()
+
+    # print(solver.variables())
+
+    # gets hint from file
+    if(len(sys.argv) == 3):
+
+        file_path = sys.argv[2]
+        hint = get_hint_from_file(file_path, len(V))
+
+        print(len(solver.variables()))
+        print(len(hint))
+        solver.SetHint(solver.variables()[:-len(V)], hint)
+
     try:
         status = solver.Solve()
     except KeyboardInterrupt:
@@ -105,12 +126,8 @@ def solve(coords, places, problem_name):
 
     # DISPLAY SOLUTION-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
-    # if status == pywraplp.Solver.OPTIMAL:
-    # print('Solution to \'' + problem_name + '\':')
     print('Objective value =', solver.Objective().Value())
     print('Nodes = ' + str(solver.nodes()))
-    # gap = solver.GetDoubleParam(solver.RELATIVE_MIP_GAP)
-    # print('Gap = ' + str(gap))
 
     nc = 0
     polygon = []
@@ -133,6 +150,9 @@ def solve(coords, places, problem_name):
     plt.scatter(*zip(*polygon), linewidths=0.00001)
     plt.plot(xs,ys) 
     plt.show() # if you need...
+
+    for i in V:
+        print(y[i].solution_value())
     print('------------------------------------------------\n')
 
 
@@ -149,9 +169,9 @@ def solve(coords, places, problem_name):
 places = ['Gusty Garden Galaxy', 'Freezeflame Galaxy', 'Dusty Dune Galaxy', 'Honeyclimb Galaxy', 'Bigmouth Galaxy']
 
 # toy problem coordenates
-coords = [(3, 2), (4, 4), (10, 6), (12, 4), (14, 8)]
+coords = [(3, 2), (4, 4), (10, 6), (7, 4), (14, 8)]
 
-if(len(sys.argv) == 2):
+if(len(sys.argv) > 1):
 
     if(os.path.isfile(sys.argv[1])):
         coords = []
