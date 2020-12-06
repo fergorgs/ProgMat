@@ -1,6 +1,4 @@
 from py2opt.routefinder import RouteFinder
-from ortools.linear_solver import pywraplp
-from itertools import chain, combinations, product
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
@@ -23,19 +21,16 @@ def get_distance_matrix(coords):
 
 
 
-#cities_names = ['A', 'B', 'C', 'D']
-#dist_mat = [[0, 29, 15, 35], [29, 0, 57, 42], [15, 57, 0, 61], [35, 42, 61, 0]]
-
 def two_opt(dist_mat, cities_names):
     route_finder = RouteFinder(dist_mat, cities_names, iterations=5)
     best_distance, best_route = route_finder.solve()
 
-    #print(best_distance)
-    # print(best_route)
-
-    for adj in make_adjacent_matrix(best_route):
-        for x in adj:
-            print(str(x))
+    with open('hint.txt', 'w') as f:
+        lines = []
+        for adj in make_adjacent_matrix(best_route):
+            for x in adj:
+                lines.append(str(x)+'\n')
+        f.writelines(lines)
     return best_route
 
 
@@ -47,8 +42,7 @@ def make_adjacent_matrix(best_route):
     for i in range(n):
         cityName = best_route[i]
         cityIndex = int(cityName.split(' ')[1]) - 1
-        # print('i= ' + str(i) + ' city index= ' + str(cityIndex) + ' last index= ' + str(lastIndex))
-        
+    
         if i != 0:
             # fazer adjacencia
             matriz[lastIndex][cityIndex] = 1
@@ -92,9 +86,6 @@ def read_file():
             
             polygon.append(coords[0])
                 
-
-            # polygon = [[3, 5], [6, 4]]
-            print(polygon)
             xs, ys = zip(*polygon) #create lists of x and y values
 
             plt.figure()

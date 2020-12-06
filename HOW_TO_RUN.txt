@@ -1,0 +1,26 @@
+
+MAIN CODE (caixeiro.py)
+PACOTES NECESSÁRIOS
+- pip3 install ortools
+- pip3 install mathplotlib
+- pip3 install numpy
+
+RUN
+- python3 caixeiro.py
+	- 0 argumentos -> resolve o "Toy Problem"
+	- 1o argumento -> arquivo da instância que se deseja executar. O arquivo deve estar no formato disponível em <http://www.math.uwaterloo.ca/tsp/world/countries.html>
+	- 2o argumento (opcional) -> arquivo com a "Hint" para a resolução da instância fornecida
+	
+	
+	
+2-OPT (2opt.py)
+PACOTES NECESSÁRIOS
+- pip3 install py2opt
+- pip3 install mathplotlib
+- pip3 install numpy
+
+RUN
+- python3 2opt.py
+	- 1o argumento (obrigatório) -> arquivo da instância que se deseja criar uma hint. O arquivo deve estar no formato disponível em <http://www.math.uwaterloo.ca/tsp/world/countries.html>
+	
+- a matriz de adjacência gerada (Hint) estará disponível no arquivo "./hint.txt"

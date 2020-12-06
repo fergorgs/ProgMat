@@ -1,19 +1,32 @@
+from __future__ import print_function
+from ortools.linear_solver import pywraplp
+from itertools import chain, combinations, product
+import matplotlib.pyplot as plt
+import numpy as np
 import sys
 from sys import stdout as out
 import os
-from mip import Model, xsum, minimize, BINARY
-import numpy as np
-from itertools import chain, combinations, product
 
-# powerset
-# generates all the sub-sets possible given a certain range of numbers
-# def powerset(iterable):
-#    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
-#    s = list(iterable)
-#    return chain.from_iterable(combinations(s, r) for r in range(2, len(s)-1))
+def get_hint_from_file(file_path, num_of_ys):
 
-# get_distance_matrix
-# given a list of tuples, returns a matrix with the euclidian distance between those tuples
+    vals = []
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
+
+    for val in lines:
+        try:
+            vals.append(float(val))
+        except:
+            continue
+
+    # print(vals)
+
+    # for x in range(0, num_of_ys):
+    #     vals.append(x)
+        
+    return vals
+
+
 def get_distance_matrix(coords):
     matrix = []
     
@@ -28,76 +41,90 @@ def get_distance_matrix(coords):
     return matrix
 
 
-# solve
-# builds and solves a model, given the problem
-# receives: a list of coordenates; a list of names of the places
 def solve(coords, places, problem_name):
-    
-    #path = os.path.join('./output', problem_name)
-    #if(os.path.isfile(path + '.lp')):
-    #    model.read(path + '.lp')    
-    #else:
-    # print(len(coords))
-    # número de nós e lista de vértices
+
     n, V = len(coords), set(range(len(coords)))
-    
+        
     # matriz de distâncias completa
     c = get_distance_matrix(coords)
 
-    # print(c)
-    # modelo
-    model = Model()
+    # Create the mip solver with the SCIP backend.
+    solver = pywraplp.Solver.CreateSolver('SCIP')
 
-    # variáveis binárias indicando se arco (i,j) é usado na rota
-    x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
+    # SET VARIABLES-----------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------
+    infinity = solver.infinity()
+    x = [[solver.BoolVar('x' + str(i) + str(j)) for j in V] for i in V]
+    y = [solver.IntVar(0.0, infinity, 'y') for i in V]
 
-    # variáveis contínuas para prevencção de sub-rotas: cada cidade terá
-    # um identificador numérico maior na rota, excetuando-se a primeira
-    y = [model.add_var() for i in V]
-    # funcção objetivo: minimizar custo total
-    model.objective = minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
+    print('Number of variables =', solver.NumVariables())
 
-    # restrição : sair de cada cidade somente uma vez
+    # SET CONSTRAINS-----------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------
     for i in V:
-        model += xsum(x[i][j] for j in V - {i}) == 1
-
-    # restrição : entrar em cada cidade somente uma vez
+        solver.Add(sum(x[i][j] for j in V - {i}) == 1)
     for i in V:
-        model += xsum(x[j][i] for j in V - {i}) == 1
-
-    # eliminação de sub-rotas
-    # for s in powerset(range(len(coords))):
-    #     model += xsum(x[i][j] for i in s for j in V - set(s)) >= 1
-
-    # eliminação de sub-rotas
+        solver.Add(sum(x[j][i] for j in V - {i}) == 1)
     for (i, j) in product(V - {0}, V - {0}):
         if i != j:
-            model += y[i] - (n+1)*x[i][j] >= y[j]-n
+            solver.Add(y[i] - (n+1)*x[i][j] >= y[j]-n)
 
-    model.verbose = 1
+    # DEFINE OBJECTIVE-----------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------
+    solver.Minimize(sum(c[i][j]*x[i][j] for i in V for j in V))
 
-    # otimização com limite de tempo de 30 segundos
-    print(model.optimize(max_seconds=600, relax=False))
-    
-    # verificando se ao menos uma solução válida foi encontrada
-    if model.num_solutions > 0:
-        print('route with total distance %g found: %s'
-            % (model.objective_value, places[0]))
-        nc = 0
-        while True:
-            for i in V:
-                if x[nc][i].x >= 1:
-                    nc = i
-                    break
-                
-            print(' -> %s' % places[nc])
-            if nc == 0:
+    # SOLVE-----------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------
+    solver.SetTimeLimit(10*60000)
+    solver.EnableOutput()
+
+    # gets hint from file
+    if(len(sys.argv) == 3):
+
+        file_path = sys.argv[2]
+        hint = get_hint_from_file(file_path, len(V))
+
+        solver.SetHint(solver.variables()[:-len(V)], hint)
+
+    try:
+        status = solver.Solve()
+    except KeyboardInterrupt:
+        print('Trying to finish the solving process')
+        solver.InterruptSolve()
+
+    # DISPLAY SOLUTION-----------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------
+    print('Objective value =', solver.Objective().Value())
+    print('Nodes = ' + str(solver.nodes()))
+
+    nc = 0
+    polygon = []
+    while True:
+        for i in V:
+            if x[nc][i].solution_value() >= 1:
+                nc = i
                 break
-        print('\n')
-        model.write('solution.sol')
-        #model.write(path + '.lp')
-    else:
-        print('no feasible solution found, upper bound is: {}'.format(model.objective_bound))
+            
+        print(' -> ' + str(coords[nc]))
+        polygon.append([coords[nc][0], coords[nc][1]])
+        if nc == 0:
+            break
+
+    polygon.append(polygon[0]) #repeat the first point to create a 'closed loop'
+
+    xs, ys = zip(*polygon) #create lists of x and y values
+
+    plt.figure()
+    plt.scatter(*zip(*polygon), linewidths=0.00001)
+    plt.plot(xs,ys) 
+    plt.show() # if you need...
+
+    print('------------------------------------------------\n')
+
+
+
+
+
 
 
 
@@ -108,9 +135,9 @@ def solve(coords, places, problem_name):
 places = ['Gusty Garden Galaxy', 'Freezeflame Galaxy', 'Dusty Dune Galaxy', 'Honeyclimb Galaxy', 'Bigmouth Galaxy']
 
 # toy problem coordenates
-coords = [(3, 2), (4, 4), (10, 6), (12, 4), (14, 8)]
+coords = [(3, 2), (4, 4), (10, 6), (7, 4), (14, 8)]
 
-if(len(sys.argv) == 2):
+if(len(sys.argv) > 1):
 
     if(os.path.isfile(sys.argv[1])):
         coords = []
