@@ -19,10 +19,10 @@ def get_hint_from_file(file_path, num_of_ys):
         except:
             continue
 
-    print(vals)
+    # print(vals)
 
     # for x in range(0, num_of_ys):
-        # vals.append(x)
+    #     vals.append(x)
         
     return vals
 
@@ -103,7 +103,7 @@ def solve(coords, places, problem_name):
 
     # SOLVE-----------------------------------------------------------------------------------
     #-------------------------------------------------------------------------------------------------
-    solver.SetTimeLimit(30*60000)
+    solver.SetTimeLimit(10*60000)
     solver.EnableOutput()
 
     # print(solver.variables())
@@ -114,9 +114,10 @@ def solve(coords, places, problem_name):
         file_path = sys.argv[2]
         hint = get_hint_from_file(file_path, len(V))
 
-        print(len(solver.variables()))
-        print(len(hint))
+        # print(len(solver.variables()))
+        # print(len(hint))
         solver.SetHint(solver.variables()[:-len(V)], hint)
+        # solver.SetHint(solver.variables(), hint)
 
     try:
         status = solver.Solve()
@@ -151,8 +152,8 @@ def solve(coords, places, problem_name):
     plt.plot(xs,ys) 
     plt.show() # if you need...
 
-    for i in V:
-        print(y[i].solution_value())
+    # for i in V:
+    #     print(y[i].solution_value())
     print('------------------------------------------------\n')
 
 

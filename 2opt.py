@@ -27,7 +27,7 @@ def get_distance_matrix(coords):
 #dist_mat = [[0, 29, 15, 35], [29, 0, 57, 42], [15, 57, 0, 61], [35, 42, 61, 0]]
 
 def two_opt(dist_mat, cities_names):
-    route_finder = RouteFinder(dist_mat, cities_names, iterations=2)
+    route_finder = RouteFinder(dist_mat, cities_names, iterations=5)
     best_distance, best_route = route_finder.solve()
 
     #print(best_distance)
@@ -90,7 +90,7 @@ def read_file():
 
                 polygon.append(coords[int(x.split()[1])-1])
             
-            # polygon.append(coords[0])
+            polygon.append(coords[0])
                 
 
             # polygon = [[3, 5], [6, 4]]
